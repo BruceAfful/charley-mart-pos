@@ -88,3 +88,21 @@ def update_stock(product_id, quantity_sold):
 
     conn.commit()
     conn.close()
+
+def get_all_products():
+
+    conn = connect_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT * FROM products
+    ORDER BY name ASC
+    """)
+
+    products = cursor.fetchall()
+
+    conn.close()
+
+    return products    
+
+    
