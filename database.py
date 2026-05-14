@@ -306,3 +306,36 @@ def get_low_stock_products():
     conn.close()
 
     return products
+
+# UPDATE PRODUCT
+def update_product(
+    product_id,
+    barcode,
+    name,
+    price,
+    stock_quantity
+):
+
+    conn = connect_db()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    UPDATE products
+    SET
+        barcode = ?,
+        name = ?,
+        price = ?,
+        stock_quantity = ?
+    WHERE id = ?
+    """, (
+        barcode,
+        name,
+        price,
+        stock_quantity,
+        product_id
+    ))
+
+    conn.commit()
+
+    conn.close()

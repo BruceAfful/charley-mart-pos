@@ -4,7 +4,8 @@ from tkinter import ttk, messagebox
 from database import (
     create_tables,
     add_product,
-    get_all_products
+    get_all_products,
+    update_product
 )
 
 # DATABASE
@@ -14,7 +15,7 @@ create_tables()
 root = tk.Tk()
 
 root.title("Charley Mart - Product Manager")
-root.geometry("900x650")
+root.geometry("1000x700")
 root.configure(bg="#0F1923")
 
 # COLORS
@@ -24,11 +25,15 @@ ACCENT = "#00C896"
 TEXT = "#E8F4F8"
 MUTED = "#7A9BB5"
 WHITE = "#FFFFFF"
+WARNING = "#FF6B35"
 
 # FONTS
 TITLE_FONT = ("Courier New", 22, "bold")
 LABEL_FONT = ("Courier New", 12)
 BUTTON_FONT = ("Courier New", 12, "bold")
+
+# CURRENT SELECTED PRODUCT
+selected_product_id = None
 
 # TITLE
 title = tk.Label(
@@ -113,9 +118,14 @@ stock_entry = tk.Entry(
 
 stock_entry.grid(row=3, column=1, padx=10)
 
-
 # TABLE
-columns = ("ID", "Barcode", "Name", "Price", "Stock")
+columns = (
+    "ID",
+    "Barcode",
+    "Name",
+    "Price",
+    "Stock"
+)
 
 table = ttk.Treeview(
     root,
@@ -125,8 +135,9 @@ table = ttk.Treeview(
 )
 
 for col in columns:
+
     table.heading(col, text=col)
-    table.column(col, width=150)
+    table.column(col, width=180)
 
 table.pack(fill="both", expand=True, padx=20, pady=20)
 
@@ -150,7 +161,20 @@ def load_products():
         ))
 
 
-# ADD PRODUCT
+# CLEAR FORM
+def clear_form():
+
+    global selected_product_id
+
+    selected_product_id = None
+
+    barcode_entry.delete(0, tk.END)
+    name_entry.delete(0, tk.END)
+    price_entry.delete(0, tk.END)
+    stock_entry.delete(0, tk.END)
+
+
+# SAVE PRODUCT
 def save_product():
 
     try:
@@ -167,10 +191,7 @@ def save_product():
             f"{name} added successfully!"
         )
 
-        barcode_entry.delete(0, tk.END)
-        name_entry.delete(0, tk.END)
-        price_entry.delete(0, tk.END)
-        stock_entry.delete(0, tk.END)
+        clear_form()
 
         load_products()
 
@@ -182,18 +203,129 @@ def save_product():
         )
 
 
-# SAVE BUTTON
+# SELECT PRODUCT
+def select_product(event):
+
+    global selected_product_id
+
+    selected = table.selection()
+
+    if not selected:
+        return
+
+    values = table.item(selected[0])["values"]
+
+    selected_product_id = values[0]
+
+    barcode = values[1]
+    name = values[2]
+    price = str(values[3]).replace("GHS ", "")
+    stock = values[4]
+
+    clear_form()
+
+    selected_product_id = values[0]
+
+    barcode_entry.insert(0, barcode)
+    name_entry.insert(0, name)
+    price_entry.insert(0, price)
+    stock_entry.insert(0, stock)
+
+
+# UPDATE PRODUCT
+def edit_product():
+
+    global selected_product_id
+
+    if selected_product_id is None:
+
+        messagebox.showwarning(
+            "No Selection",
+            "Select a product first."
+        )
+
+        return
+
+    try:
+
+        barcode = barcode_entry.get()
+        name = name_entry.get()
+        price = float(price_entry.get())
+        stock = int(stock_entry.get())
+
+        update_product(
+            selected_product_id,
+            barcode,
+            name,
+            price,
+            stock
+        )
+
+        messagebox.showinfo(
+            "Updated",
+            f"{name} updated successfully!"
+        )
+
+        clear_form()
+
+        load_products()
+
+    except Exception as e:
+
+        messagebox.showerror(
+            "Error",
+            str(e)
+        )
+
+
+# BIND TABLE CLICK
+table.bind("<<TreeviewSelect>>", select_product)
+
+# BUTTON FRAME
+button_frame = tk.Frame(root, bg=BG)
+button_frame.pack(pady=10)
+
+# ADD BUTTON
 save_btn = tk.Button(
-    form_frame,
+    button_frame,
     text="ADD PRODUCT",
     font=BUTTON_FONT,
     bg=ACCENT,
     fg=WHITE,
     relief="flat",
+    width=18,
     command=save_product
 )
 
-save_btn.grid(row=4, column=0, columnspan=2, pady=20)
+save_btn.pack(side="left", padx=10)
+
+# UPDATE BUTTON
+update_btn = tk.Button(
+    button_frame,
+    text="UPDATE PRODUCT",
+    font=BUTTON_FONT,
+    bg=WARNING,
+    fg=WHITE,
+    relief="flat",
+    width=18,
+    command=edit_product
+)
+
+update_btn.pack(side="left", padx=10)
+
+# CLEAR BUTTON
+clear_btn = tk.Button(
+    button_frame,
+    text="CLEAR FORM",
+    font=BUTTON_FONT,
+    bg="#444",
+    fg=WHITE,
+    relief="flat",
+    width=18,
+    command=clear_form
+)
+
+clear_btn.pack(side="left", padx=10)
 
 # INITIAL LOAD
 load_products()
