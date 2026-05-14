@@ -5,7 +5,8 @@ from database import (
     create_tables,
     add_product,
     find_product_by_barcode,
-    update_stock
+    update_stock,
+    save_sale
 )
 
 from receipt import generate_receipt
@@ -325,6 +326,7 @@ status_label = tk.Label(
 
 status_label.pack(padx=20)
 
+
 # FUNCTIONS
 
 def refresh_cart():
@@ -515,6 +517,14 @@ def checkout():
         change
     )
 
+    # SAVE SALE TO DATABASE
+    sale_id = save_sale(
+        cart,
+        total_amount,
+        payment,
+        change
+    )
+
     # UPDATE STOCK
     for product_id in cart:
 
@@ -528,7 +538,8 @@ def checkout():
         f"Paid   : GHS {payment:.2f}\n"
         f"Total  : GHS {total_amount:.2f}\n"
         f"Change : GHS {change:.2f}\n\n"
-        f"Receipt Saved:\n{receipt_file}"
+        f"Receipt Saved:\n{receipt_file}\n\n"
+        f"Sale ID: {sale_id}"
     )
 
     cart = {}

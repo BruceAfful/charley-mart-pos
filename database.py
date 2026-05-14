@@ -4,14 +4,19 @@ DATABASE_NAME = "charley_mart.db"
 
 
 def connect_db():
+
     conn = sqlite3.connect(DATABASE_NAME)
+
     return conn
 
 
 def create_tables():
+
     conn = connect_db()
+
     cursor = conn.cursor()
 
+    # PRODUCTS TABLE
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,51 +27,85 @@ def create_tables():
     )
     """)
 
+    # SALES TABLE
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS sales (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        total_amount REAL NOT NULL,
+        payment REAL NOT NULL,
+        change_amount REAL NOT NULL,
+        sale_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # SALE ITEMS TABLE
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS sale_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sale_id INTEGER,
+        product_name TEXT,
+        quantity INTEGER,
+        unit_price REAL,
+        subtotal REAL,
+
+        FOREIGN KEY (sale_id)
+        REFERENCES sales(id)
+    )
+    """)
+
     conn.commit()
+
     conn.close()
 
-    print("Database and products table created successfully!")
+    print("Database tables ready!")
 
 
 def add_product(barcode, name, price, stock_quantity):
+
     conn = connect_db()
+
     cursor = conn.cursor()
 
     try:
+
         cursor.execute("""
-        INSERT INTO products (barcode, name, price, stock_quantity)
+        INSERT INTO products (
+            barcode,
+            name,
+            price,
+            stock_quantity
+        )
         VALUES (?, ?, ?, ?)
-        """, (barcode, name, price, stock_quantity))
+        """, (
+            barcode,
+            name,
+            price,
+            stock_quantity
+        ))
 
         conn.commit()
 
         print(f"{name} added successfully!")
 
     except sqlite3.IntegrityError:
-        print(f"Product with barcode {barcode} already exists!")
+
+        print(
+            f"Product with barcode "
+            f"{barcode} already exists!"
+        )
 
     conn.close()
-
-
-def view_products():
-    conn = connect_db()
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM products")
-
-    products = cursor.fetchall()
-
-    conn.close()
-
-    return products
 
 
 def find_product_by_barcode(barcode):
+
     conn = connect_db()
+
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT * FROM products WHERE barcode = ?
+    SELECT * FROM products
+    WHERE barcode = ?
     """, (barcode,))
 
     product = cursor.fetchone()
@@ -77,21 +116,29 @@ def find_product_by_barcode(barcode):
 
 
 def update_stock(product_id, quantity_sold):
+
     conn = connect_db()
+
     cursor = conn.cursor()
 
     cursor.execute("""
     UPDATE products
     SET stock_quantity = stock_quantity - ?
     WHERE id = ?
-    """, (quantity_sold, product_id))
+    """, (
+        quantity_sold,
+        product_id
+    ))
 
     conn.commit()
+
     conn.close()
+
 
 def get_all_products():
 
     conn = connect_db()
+
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -103,6 +150,56 @@ def get_all_products():
 
     conn.close()
 
-    return products    
+    return products
 
-    
+
+# SAVE SALE
+def save_sale(cart, total_amount, payment, change):
+
+    conn = connect_db()
+
+    cursor = conn.cursor()
+
+    # INSERT SALE
+    cursor.execute("""
+    INSERT INTO sales (
+        total_amount,
+        payment,
+        change_amount
+    )
+    VALUES (?, ?, ?)
+    """, (
+        total_amount,
+        payment,
+        change
+    ))
+
+    sale_id = cursor.lastrowid
+
+    # INSERT ITEMS
+    for product_id in cart:
+
+        item = cart[product_id]
+
+        cursor.execute("""
+        INSERT INTO sale_items (
+            sale_id,
+            product_name,
+            quantity,
+            unit_price,
+            subtotal
+        )
+        VALUES (?, ?, ?, ?, ?)
+        """, (
+            sale_id,
+            item["name"],
+            item["quantity"],
+            item["price"],
+            item["subtotal"]
+        ))
+
+    conn.commit()
+
+    conn.close()
+
+    return sale_id
