@@ -203,3 +203,106 @@ def save_sale(cart, total_amount, payment, change):
     conn.close()
 
     return sale_id
+
+# TOTAL SALES
+def get_total_sales():
+
+    conn = connect_db()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT IFNULL(SUM(total_amount), 0)
+    FROM sales
+    """)
+
+    total = cursor.fetchone()[0]
+
+    conn.close()
+
+    return total
+
+
+# TOTAL TRANSACTIONS
+def get_total_transactions():
+
+    conn = connect_db()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT COUNT(*)
+    FROM sales
+    """)
+
+    count = cursor.fetchone()[0]
+
+    conn.close()
+
+    return count
+
+
+# TOTAL PRODUCTS SOLD
+def get_total_products_sold():
+
+    conn = connect_db()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT IFNULL(SUM(quantity), 0)
+    FROM sale_items
+    """)
+
+    total = cursor.fetchone()[0]
+
+    conn.close()
+
+    return total
+
+
+# TOP SELLING PRODUCTS
+def get_top_products():
+
+    conn = connect_db()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT
+        product_name,
+        SUM(quantity) as total_qty
+    FROM sale_items
+    GROUP BY product_name
+    ORDER BY total_qty DESC
+    LIMIT 5
+    """)
+
+    products = cursor.fetchall()
+
+    conn.close()
+
+    return products
+
+
+# LOW STOCK PRODUCTS
+def get_low_stock_products():
+
+    conn = connect_db()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT
+        name,
+        stock_quantity
+    FROM products
+    WHERE stock_quantity <= 5
+    ORDER BY stock_quantity ASC
+    """)
+
+    products = cursor.fetchall()
+
+    conn.close()
+
+    return products
