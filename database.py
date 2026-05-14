@@ -1,4 +1,5 @@
 import sqlite3
+import hashlib
 
 DATABASE_NAME = "charley_mart.db"
 
@@ -53,6 +54,16 @@ def create_tables():
     )
     """)
 
+    # USERS TABLE
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL
+    )
+    """)
+
     conn.commit()
 
     conn.close()
@@ -60,6 +71,7 @@ def create_tables():
     print("Database tables ready!")
 
 
+# ADD PRODUCT
 def add_product(barcode, name, price, stock_quantity):
 
     conn = connect_db()
@@ -97,6 +109,7 @@ def add_product(barcode, name, price, stock_quantity):
     conn.close()
 
 
+# FIND PRODUCT
 def find_product_by_barcode(barcode):
 
     conn = connect_db()
@@ -115,6 +128,7 @@ def find_product_by_barcode(barcode):
     return product
 
 
+# UPDATE STOCK
 def update_stock(product_id, quantity_sold):
 
     conn = connect_db()
@@ -135,6 +149,7 @@ def update_stock(product_id, quantity_sold):
     conn.close()
 
 
+# GET ALL PRODUCTS
 def get_all_products():
 
     conn = connect_db()
@@ -176,7 +191,7 @@ def save_sale(cart, total_amount, payment, change):
 
     sale_id = cursor.lastrowid
 
-    # INSERT ITEMS
+    # INSERT SALE ITEMS
     for product_id in cart:
 
         item = cart[product_id]
@@ -203,6 +218,7 @@ def save_sale(cart, total_amount, payment, change):
     conn.close()
 
     return sale_id
+
 
 # TOTAL SALES
 def get_total_sales():
@@ -307,6 +323,7 @@ def get_low_stock_products():
 
     return products
 
+
 # UPDATE PRODUCT
 def update_product(
     product_id,
@@ -339,3 +356,87 @@ def update_product(
     conn.commit()
 
     conn.close()
+
+
+# HASH PASSWORD
+def hash_password(password):
+
+    return hashlib.sha256(
+        password.encode()
+    ).hexdigest()
+
+
+# CREATE DEFAULT USERS
+def create_default_users():
+
+    conn = connect_db()
+
+    cursor = conn.cursor()
+
+    # CHECK IF ADMIN EXISTS
+    cursor.execute("""
+    SELECT * FROM users
+    WHERE username = 'admin'
+    """)
+
+    existing_admin = cursor.fetchone()
+
+    # CREATE DEFAULT ADMIN
+    if not existing_admin:
+
+        hashed_password = hash_password(
+            "admin123"
+        )
+
+        cursor.execute("""
+        INSERT INTO users (
+            username,
+            password,
+            role
+        )
+        VALUES (?, ?, ?)
+        """, (
+            "admin",
+            hashed_password,
+            "admin"
+        ))
+
+        print("Default admin created!")
+
+    conn.commit()
+
+    conn.close()
+
+
+# VERIFY LOGIN
+def verify_login(username, password):
+
+    conn = connect_db()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT id, username, password, role
+    FROM users
+    WHERE username = ?
+    """, (username,))
+
+    user = cursor.fetchone()
+
+    conn.close()
+
+    if user:
+
+        stored_password = user[2]
+
+        hashed_input_password = hash_password(password)
+
+        if hashed_input_password == stored_password:
+
+            return {
+                "id": user[0],
+                "username": user[1],
+                "role": user[3]
+            }
+
+    return None
