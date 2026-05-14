@@ -1,7 +1,7 @@
 import sqlite3
 import hashlib
 
-DATABASE_NAME = "charley_mart.db"
+DATABASE_NAME = "pos_system.db"
 
 
 def connect_db():
@@ -109,7 +109,7 @@ def add_product(barcode, name, price, stock_quantity):
     conn.close()
 
 
-# FIND PRODUCT
+# FIND PRODUCT BY BARCODE
 def find_product_by_barcode(barcode):
 
     conn = connect_db()
@@ -175,7 +175,6 @@ def save_sale(cart, total_amount, payment, change):
 
     cursor = conn.cursor()
 
-    # INSERT SALE
     cursor.execute("""
     INSERT INTO sales (
         total_amount,
@@ -191,7 +190,6 @@ def save_sale(cart, total_amount, payment, change):
 
     sale_id = cursor.lastrowid
 
-    # INSERT SALE ITEMS
     for product_id in cart:
 
         item = cart[product_id]
@@ -220,7 +218,7 @@ def save_sale(cart, total_amount, payment, change):
     return sale_id
 
 
-# TOTAL SALES
+# TOTAL SALES REVENUE
 def get_total_sales():
 
     conn = connect_db()
@@ -358,6 +356,23 @@ def update_product(
     conn.close()
 
 
+# DELETE PRODUCT
+def delete_product(product_id):
+
+    conn = connect_db()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    DELETE FROM products
+    WHERE id = ?
+    """, (product_id,))
+
+    conn.commit()
+
+    conn.close()
+
+
 # HASH PASSWORD
 def hash_password(password):
 
@@ -366,14 +381,13 @@ def hash_password(password):
     ).hexdigest()
 
 
-# CREATE DEFAULT USERS
+# CREATE DEFAULT ADMIN USER
 def create_default_users():
 
     conn = connect_db()
 
     cursor = conn.cursor()
 
-    # CHECK IF ADMIN EXISTS
     cursor.execute("""
     SELECT * FROM users
     WHERE username = 'admin'
@@ -381,12 +395,9 @@ def create_default_users():
 
     existing_admin = cursor.fetchone()
 
-    # CREATE DEFAULT ADMIN
     if not existing_admin:
 
-        hashed_password = hash_password(
-            "admin123"
-        )
+        hashed_password = hash_password("admin123")
 
         cursor.execute("""
         INSERT INTO users (
@@ -402,6 +413,44 @@ def create_default_users():
         ))
 
         print("Default admin created!")
+
+    conn.commit()
+
+    conn.close()
+
+
+# CREATE DEFAULT CASHIER USER
+def create_cashier_user():
+
+    conn = connect_db()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT * FROM users
+    WHERE username = 'cashier'
+    """)
+
+    existing_cashier = cursor.fetchone()
+
+    if not existing_cashier:
+
+        hashed_password = hash_password("cash123")
+
+        cursor.execute("""
+        INSERT INTO users (
+            username,
+            password,
+            role
+        )
+        VALUES (?, ?, ?)
+        """, (
+            "cashier",
+            hashed_password,
+            "cashier"
+        ))
+
+        print("Default cashier created!")
 
     conn.commit()
 
@@ -429,9 +478,9 @@ def verify_login(username, password):
 
         stored_password = user[2]
 
-        hashed_input_password = hash_password(password)
+        hashed_input = hash_password(password)
 
-        if hashed_input_password == stored_password:
+        if hashed_input == stored_password:
 
             return {
                 "id": user[0],
@@ -440,3 +489,19 @@ def verify_login(username, password):
             }
 
     return None
+
+# DELETE PRODUCT
+def delete_product(product_id):
+
+    conn = connect_db()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    DELETE FROM products
+    WHERE id = ?
+    """, (product_id,))
+
+    conn.commit()
+
+    conn.close()

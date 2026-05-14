@@ -3,7 +3,6 @@ from tkinter import ttk, messagebox, simpledialog
 
 from database import (
     create_tables,
-    add_product,
     find_product_by_barcode,
     update_stock,
     save_sale
@@ -13,11 +12,6 @@ from receipt import generate_receipt
 
 # DATABASE SETUP
 create_tables()
-
-# SAMPLE PRODUCTS
-add_product("1001", "Coca Cola", 15.00, 20)
-add_product("1002", "Indomie Noodles", 7.50, 50)
-add_product("1003", "Milo 400g", 35.00, 15)
 
 # ── COLOUR PALETTE ──────────────────────────────────────────
 BG         = "#0F1923"
@@ -43,7 +37,7 @@ F_SMALL    = ("Courier New", 9)
 
 # ── ROOT WINDOW ─────────────────────────────────────────────
 root = tk.Tk()
-root.title("Charley Mart POS")
+root.title("POS System")
 root.geometry("1100x720")
 root.configure(bg=BG)
 root.resizable(False, False)
@@ -161,7 +155,7 @@ header.pack(fill="x", padx=24, pady=(20, 0))
 
 tk.Label(
     header,
-    text="● CHARLEY MART",
+    text="● POINT OF SALE",
     font=F_TITLE,
     bg=BG,
     fg=ACCENT,
@@ -169,7 +163,7 @@ tk.Label(
 
 tk.Label(
     header,
-    text="POINT OF SALE",
+    text="RETAIL MANAGEMENT",
     font=F_SMALL,
     bg=BG,
     fg=MUTED,
@@ -213,7 +207,7 @@ barcode_entry.pack(
     padx=(0, 10)
 )
 
-# TABLE
+# CART TABLE
 table_frame = tk.Frame(left, bg=BG)
 table_frame.pack(fill="both", expand=True, padx=24)
 
@@ -273,7 +267,7 @@ tk.Label(
 
 tk.Label(
     right,
-    text="CHARLEY MART",
+    text="POS SYSTEM",
     font=("Courier New", 13, "bold"),
     bg=PANEL,
     fg=TEXT,
@@ -327,7 +321,9 @@ status_label = tk.Label(
 status_label.pack(padx=20)
 
 
+# ════════════════════════════════════════════════════════════
 # FUNCTIONS
+# ════════════════════════════════════════════════════════════
 
 def refresh_cart():
 
@@ -379,16 +375,19 @@ def scan_product(event=None):
 
     if product:
 
-        product_id = product[0]
-        product_name = product[2]
+        product_id    = product[0]
+        product_name  = product[2]
         product_price = product[3]
-        stock_qty = product[4]
+        stock_qty     = product[4]
 
-        if stock_qty <= 0:
+        # CALCULATE HOW MANY ARE ALREADY IN CART
+        already_in_cart = cart.get(product_id, {}).get("quantity", 0)
+
+        if stock_qty <= 0 or already_in_cart >= stock_qty:
 
             messagebox.showerror(
                 "Out of Stock",
-                f"{product_name} is out of stock!"
+                f"No more stock available for {product_name}."
             )
 
             barcode_entry.delete(0, tk.END)
@@ -425,7 +424,7 @@ def scan_product(event=None):
 
         messagebox.showerror(
             "Not Found",
-            "Product not found!"
+            "No product found with that barcode."
         )
 
         status_var.set("✗ Barcode not recognised")
@@ -502,14 +501,14 @@ def checkout():
 
         messagebox.showerror(
             "Insufficient Payment",
-            f"GHS {payment:.2f} is less than GHS {total_amount:.2f}."
+            f"GHS {payment:.2f} is less than total GHS {total_amount:.2f}."
         )
 
         return
 
     change = payment - total_amount
 
-    # GENERATE RECEIPT
+    # GENERATE RECEIPT FILE
     receipt_file = generate_receipt(
         cart,
         total_amount,
@@ -525,7 +524,7 @@ def checkout():
         change
     )
 
-    # UPDATE STOCK
+    # DEDUCT STOCK
     for product_id in cart:
 
         update_stock(
@@ -538,7 +537,7 @@ def checkout():
         f"Paid   : GHS {payment:.2f}\n"
         f"Total  : GHS {total_amount:.2f}\n"
         f"Change : GHS {change:.2f}\n\n"
-        f"Receipt Saved:\n{receipt_file}\n\n"
+        f"Receipt saved:\n{receipt_file}\n\n"
         f"Sale ID: {sale_id}"
     )
 
@@ -546,17 +545,18 @@ def checkout():
 
     refresh_cart()
 
-    status_var.set(
-        "Sale complete — ready for next customer"
-    )
+    status_var.set("Sale complete — ready for next customer")
 
 
+# ════════════════════════════════════════════════════════════
 # BUTTONS
+# ════════════════════════════════════════════════════════════
+
 remove_btn = make_btn(
     btn_bar,
     "⊖  REMOVE ITEM",
     ACCENT2,
-    lambda: remove_item(),
+    remove_item,
     width=18
 )
 
@@ -566,7 +566,7 @@ clear_btn = make_btn(
     btn_bar,
     "✕  CLEAR CART",
     "#4A3040",
-    lambda: clear_cart(),
+    clear_cart,
     width=18
 )
 
@@ -576,7 +576,7 @@ checkout_btn = make_btn(
     right,
     "⬤  CHECKOUT",
     ACCENT,
-    lambda: checkout(),
+    checkout,
     width=26
 )
 

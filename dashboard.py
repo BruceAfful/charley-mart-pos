@@ -14,17 +14,17 @@ from database import (
 create_tables()
 
 # COLORS
-BG = "#0F1923"
-CARD = "#1E2D3D"
-ACCENT = "#00C896"
-TEXT = "#E8F4F8"
-MUTED = "#7A9BB5"
+BG      = "#0F1923"
+CARD    = "#1E2D3D"
+ACCENT  = "#00C896"
+TEXT    = "#E8F4F8"
+MUTED   = "#7A9BB5"
 WARNING = "#FF6B35"
 
 # WINDOW
 root = tk.Tk()
 
-root.title("Charley Mart Dashboard")
+root.title("Sales Analytics Dashboard")
 root.geometry("1100x700")
 root.configure(bg=BG)
 
@@ -43,7 +43,8 @@ title.pack(pady=20)
 cards_frame = tk.Frame(root, bg=BG)
 cards_frame.pack(fill="x", padx=20)
 
-# CARD FUNCTION
+
+# CARD FACTORY
 def create_card(parent, title_text, value_text):
 
     card = tk.Frame(
@@ -56,34 +57,31 @@ def create_card(parent, title_text, value_text):
     card.pack(side="left", padx=10)
     card.pack_propagate(False)
 
-    title = tk.Label(
+    tk.Label(
         card,
         text=title_text,
         font=("Courier New", 12),
         bg=CARD,
         fg=MUTED
-    )
+    ).pack(pady=(20, 10))
 
-    title.pack(pady=(20, 10))
-
-    value = tk.Label(
+    tk.Label(
         card,
         text=value_text,
         font=("Courier New", 22, "bold"),
         bg=CARD,
         fg=ACCENT
-    )
-
-    value.pack()
+    ).pack()
 
     return card
 
-# FETCH DATA
-total_sales = get_total_sales()
-total_transactions = get_total_transactions()
-total_products = get_total_products_sold()
 
-# CARDS
+# FETCH DATA
+total_sales        = get_total_sales()
+total_transactions = get_total_transactions()
+total_products     = get_total_products_sold()
+
+# SUMMARY CARDS
 create_card(
     cards_frame,
     "TOTAL REVENUE",
@@ -140,9 +138,7 @@ top_table.column("Qty", width=120)
 top_table.pack(fill="both", expand=True, padx=20, pady=20)
 
 # LOAD TOP PRODUCTS
-top_products = get_top_products()
-
-for product in top_products:
+for product in get_top_products():
 
     top_table.insert(
         "",
@@ -153,7 +149,7 @@ for product in top_products:
 # LOW STOCK TITLE
 tk.Label(
     low_frame,
-    text="LOW STOCK PRODUCTS",
+    text="LOW STOCK ALERT",
     font=("Courier New", 16, "bold"),
     bg=CARD,
     fg=WARNING
@@ -176,9 +172,7 @@ low_table.column("Stock", width=120)
 low_table.pack(fill="both", expand=True, padx=20, pady=20)
 
 # LOAD LOW STOCK
-low_products = get_low_stock_products()
-
-for product in low_products:
+for product in get_low_stock_products():
 
     low_table.insert(
         "",

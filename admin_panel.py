@@ -5,32 +5,34 @@ from database import (
     create_tables,
     add_product,
     get_all_products,
-    update_product
+    update_product,
+    delete_product
 )
 
 # DATABASE
 create_tables()
 
+# COLORS
+BG      = "#0F1923"
+CARD    = "#1E2D3D"
+ACCENT  = "#00C896"
+TEXT    = "#E8F4F8"
+MUTED   = "#7A9BB5"
+WHITE   = "#FFFFFF"
+WARNING = "#FF6B35"
+DANGER  = "#C0392B"
+
+# FONTS
+TITLE_FONT  = ("Courier New", 22, "bold")
+LABEL_FONT  = ("Courier New", 12)
+BUTTON_FONT = ("Courier New", 12, "bold")
+
 # WINDOW
 root = tk.Tk()
 
-root.title("Charley Mart - Product Manager")
+root.title("Product Manager")
 root.geometry("1000x700")
-root.configure(bg="#0F1923")
-
-# COLORS
-BG = "#0F1923"
-CARD = "#1E2D3D"
-ACCENT = "#00C896"
-TEXT = "#E8F4F8"
-MUTED = "#7A9BB5"
-WHITE = "#FFFFFF"
-WARNING = "#FF6B35"
-
-# FONTS
-TITLE_FONT = ("Courier New", 22, "bold")
-LABEL_FONT = ("Courier New", 12)
-BUTTON_FONT = ("Courier New", 12, "bold")
+root.configure(bg=BG)
 
 # CURRENT SELECTED PRODUCT
 selected_product_id = None
@@ -118,7 +120,7 @@ stock_entry = tk.Entry(
 
 stock_entry.grid(row=3, column=1, padx=10)
 
-# TABLE
+# PRODUCT TABLE
 columns = (
     "ID",
     "Barcode",
@@ -174,36 +176,72 @@ def clear_form():
     stock_entry.delete(0, tk.END)
 
 
-# SAVE PRODUCT
-def save_product():
+# VALIDATE FORM FIELDS
+def get_form_values():
+
+    barcode = barcode_entry.get().strip()
+    name = name_entry.get().strip()
+    price_str = price_entry.get().strip()
+    stock_str = stock_entry.get().strip()
+
+    if not barcode or not name or not price_str or not stock_str:
+        messagebox.showwarning(
+            "Missing Fields",
+            "Please fill in all fields before saving."
+        )
+        return None
 
     try:
-
-        barcode = barcode_entry.get()
-        name = name_entry.get()
-        price = float(price_entry.get())
-        stock = int(stock_entry.get())
-
-        add_product(barcode, name, price, stock)
-
-        messagebox.showinfo(
-            "Success",
-            f"{name} added successfully!"
-        )
-
-        clear_form()
-
-        load_products()
-
-    except Exception as e:
-
+        price = float(price_str)
+    except ValueError:
         messagebox.showerror(
-            "Error",
-            str(e)
+            "Invalid Price",
+            "Price must be a valid number."
         )
+        return None
+
+    try:
+        stock = int(stock_str)
+    except ValueError:
+        messagebox.showerror(
+            "Invalid Stock",
+            "Stock quantity must be a whole number."
+        )
+        return None
+
+    if price < 0 or stock < 0:
+        messagebox.showerror(
+            "Invalid Values",
+            "Price and stock cannot be negative."
+        )
+        return None
+
+    return barcode, name, price, stock
 
 
-# SELECT PRODUCT
+# SAVE NEW PRODUCT
+def save_product():
+
+    values = get_form_values()
+
+    if values is None:
+        return
+
+    barcode, name, price, stock = values
+
+    add_product(barcode, name, price, stock)
+
+    messagebox.showinfo(
+        "Success",
+        f"{name} added successfully!"
+    )
+
+    clear_form()
+
+    load_products()
+
+
+# SELECT PRODUCT FROM TABLE
 def select_product(event):
 
     global selected_product_id
@@ -232,7 +270,7 @@ def select_product(event):
     stock_entry.insert(0, stock)
 
 
-# UPDATE PRODUCT
+# UPDATE EXISTING PRODUCT
 def edit_product():
 
     global selected_product_id
@@ -241,41 +279,71 @@ def edit_product():
 
         messagebox.showwarning(
             "No Selection",
-            "Select a product first."
+            "Select a product from the table first."
         )
 
         return
 
-    try:
+    values = get_form_values()
 
-        barcode = barcode_entry.get()
-        name = name_entry.get()
-        price = float(price_entry.get())
-        stock = int(stock_entry.get())
+    if values is None:
+        return
 
-        update_product(
-            selected_product_id,
-            barcode,
-            name,
-            price,
-            stock
+    barcode, name, price, stock = values
+
+    update_product(
+        selected_product_id,
+        barcode,
+        name,
+        price,
+        stock
+    )
+
+    messagebox.showinfo(
+        "Updated",
+        f"{name} updated successfully!"
+    )
+
+    clear_form()
+
+    load_products()
+
+
+# DELETE PRODUCT
+def remove_product():
+
+    global selected_product_id
+
+    if selected_product_id is None:
+
+        messagebox.showwarning(
+            "No Selection",
+            "Select a product from the table first."
         )
 
-        messagebox.showinfo(
-            "Updated",
-            f"{name} updated successfully!"
-        )
+        return
 
-        clear_form()
+    name = name_entry.get().strip() or "this product"
 
-        load_products()
+    confirmed = messagebox.askyesno(
+        "Confirm Delete",
+        f"Are you sure you want to delete '{name}'?\n"
+        "This cannot be undone."
+    )
 
-    except Exception as e:
+    if not confirmed:
+        return
 
-        messagebox.showerror(
-            "Error",
-            str(e)
-        )
+    delete_product(selected_product_id)
+
+    messagebox.showinfo(
+        "Deleted",
+        f"'{name}' has been removed."
+    )
+
+    clear_form()
+
+    load_products()
 
 
 # BIND TABLE CLICK
@@ -312,6 +380,20 @@ update_btn = tk.Button(
 )
 
 update_btn.pack(side="left", padx=10)
+
+# DELETE BUTTON
+delete_btn = tk.Button(
+    button_frame,
+    text="DELETE PRODUCT",
+    font=BUTTON_FONT,
+    bg=DANGER,
+    fg=WHITE,
+    relief="flat",
+    width=18,
+    command=remove_product
+)
+
+delete_btn.pack(side="left", padx=10)
 
 # CLEAR BUTTON
 clear_btn = tk.Button(

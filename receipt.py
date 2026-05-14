@@ -7,7 +7,7 @@ def generate_receipt(cart, total_amount, payment, change):
     # CREATE RECEIPTS FOLDER IF IT DOESN'T EXIST
     os.makedirs("receipts", exist_ok=True)
 
-    # UNIQUE RECEIPT NUMBER
+    # UNIQUE RECEIPT NUMBER BASED ON TIMESTAMP
     now = datetime.now()
 
     receipt_number = now.strftime("%Y%m%d_%H%M%S")
@@ -18,11 +18,11 @@ def generate_receipt(cart, total_amount, payment, change):
     receipt = ""
 
     receipt += "================================\n"
-    receipt += "        CHARLEY MART\n"
+    receipt += "          POS SYSTEM\n"
     receipt += "================================\n\n"
 
-    receipt += f"Receipt No: {receipt_number}\n"
-    receipt += f"Date: {now.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+    receipt += f"Receipt No : {receipt_number}\n"
+    receipt += f"Date       : {now.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
 
     receipt += "--------------------------------\n"
 
@@ -40,15 +40,15 @@ def generate_receipt(cart, total_amount, payment, change):
 
     receipt += "--------------------------------\n\n"
 
-    receipt += f"TOTAL:   GHS {total_amount:.2f}\n"
-    receipt += f"PAID:    GHS {payment:.2f}\n"
-    receipt += f"CHANGE:  GHS {change:.2f}\n\n"
+    receipt += f"TOTAL  :  GHS {total_amount:.2f}\n"
+    receipt += f"PAID   :  GHS {payment:.2f}\n"
+    receipt += f"CHANGE :  GHS {change:.2f}\n\n"
 
     receipt += "================================\n"
-    receipt += " Thank you for shopping with us!\n"
+    receipt += "  Thank you for your purchase!\n"
     receipt += "================================\n"
 
-    # SAVE RECEIPT
+    # SAVE TO FILE
     with open(filename, "w") as file:
         file.write(receipt)
 
